@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="AddressBook.Api.Tests/AddressBook.Api.Tests.csproj" />
+  <Project Path="AddressBook.Api/AddressBook.Api.csproj" />
+</Solution>
