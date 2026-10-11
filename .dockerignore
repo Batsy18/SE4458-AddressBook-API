@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+**/.vs/
+**/*.user
+.git/
+.remember/
+.superpowers/
+AddressBook.Api.Tests/
+docs/
