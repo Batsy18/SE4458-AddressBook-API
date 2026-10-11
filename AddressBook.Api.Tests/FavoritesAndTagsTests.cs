@@ -40,6 +40,23 @@ public class FavoritesAndTagsTests
     }
 
     [Fact]
+    public async Task Favorite_or_unfavorite_with_no_change_keeps_updated_at()
+    {
+        using var app = new TestApp();
+        var client = app.CreateClient();
+        var favorite = await client.CreateContactAsync(NewContact("A", "One", isFavorite: true));
+        var normal = await client.CreateContactAsync(NewContact("B", "Two"));
+
+        await client.PutAsync($"/api/contacts/{favorite.Id}/favorite", null);
+        await client.DeleteAsync($"/api/contacts/{normal.Id}/favorite");
+
+        var favoriteAfter = await client.GetFromJsonAsync<ContactDto>($"/api/contacts/{favorite.Id}");
+        var normalAfter = await client.GetFromJsonAsync<ContactDto>($"/api/contacts/{normal.Id}");
+        Assert.Equal(favorite.UpdatedAt, favoriteAfter!.UpdatedAt);
+        Assert.Equal(normal.UpdatedAt, normalAfter!.UpdatedAt);
+    }
+
+    [Fact]
     public async Task Favorite_and_unfavorite_unknown_id_return_404()
     {
         using var app = new TestApp();
