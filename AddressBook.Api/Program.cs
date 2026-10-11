@@ -6,6 +6,14 @@ using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Render tells the app which port to listen on through the PORT environment variable.
+// Without it, the default applies (8080 in the Docker image, launchSettings.json locally).
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
+
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
 
@@ -33,6 +41,17 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+if (app.Configuration.GetValue("Database:Seed", true))
+{
+    using var scope = app.Services.CreateScope();
+    SeedData.Initialize(scope.ServiceProvider.GetRequiredService<AddressBookContext>());
+}
+
+// Unhandled exceptions become a 500 ProblemDetails with no stack trace.
+app.UseExceptionHandler();
+// Empty error responses (e.g. an unknown route) get a ProblemDetails body too.
+app.UseStatusCodePages();
 
 // Swagger is the only UI this API has, so it is enabled in every environment.
 // (The template only enables it in Development, which would make /swagger return 404 on Render.)
