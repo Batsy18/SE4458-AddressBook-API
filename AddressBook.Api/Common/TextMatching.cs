@@ -17,5 +17,12 @@ public static class TextMatching
     /// <summary>True when <paramref name="value"/> contains <paramref name="term"/>, ignoring case and accents ("cagan" finds "Çağan").</summary>
     public static bool ContainsLoose(string? value, string term) =>
         value is not null &&
-        Invariant.IndexOf(value, term, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0;
+        Invariant.IndexOf(FoldDotlessI(value), FoldDotlessI(term),
+            CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0;
+
+    /// <summary>
+    /// Turkish dotless "ı" is its own letter in Unicode, not an accented "i", so ignoring accents
+    /// doesn't cover it. Treating it as "i" lets "isik" and "IŞIK" find "Işık".
+    /// </summary>
+    private static string FoldDotlessI(string text) => text.Replace('ı', 'i');
 }
