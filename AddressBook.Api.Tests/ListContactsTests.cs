@@ -140,6 +140,22 @@ public class ListContactsTests
     }
 
     [Fact]
+    public async Task Ties_are_ordered_by_id_in_the_sort_direction()
+    {
+        using var app = new TestApp();
+        var client = app.CreateClient();
+        var first = await client.CreateContactAsync(NewContact("Anna", "Smith"));
+        var second = await client.CreateContactAsync(NewContact("Bob", "Smith"));
+        var third = await client.CreateContactAsync(NewContact("Cem", "Smith"));
+
+        var asc = await ListAsync(client, "?sortBy=lastName");
+        var desc = await ListAsync(client, "?sortBy=lastName&sortOrder=desc");
+
+        Assert.Equal(new[] { first.Id, second.Id, third.Id }, asc.Items.Select(c => c.Id));
+        Assert.Equal(new[] { third.Id, second.Id, first.Id }, desc.Items.Select(c => c.Id));
+    }
+
+    [Fact]
     public async Task Sort_by_email_puts_missing_emails_last()
     {
         using var app = new TestApp();
