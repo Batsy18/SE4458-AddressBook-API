@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace AddressBook.Api.Tests;
 
@@ -18,6 +19,10 @@ public class TestApp(bool seed = false, Action<IServiceCollection>? configureSer
         builder.UseEnvironment("Testing");
         builder.UseSetting("Database:Name", $"tests-{Guid.NewGuid()}");
         builder.UseSetting("Database:Seed", seed ? "true" : "false");
+
+        // On Windows the host also logs to the Windows Event Log. Sandboxed runners (e.g. Codex)
+        // may not be allowed to write there, which made the 500 test fail. Tests log to the console only.
+        builder.ConfigureLogging(logging => logging.ClearProviders().AddConsole());
 
         if (configureServices is not null)
         {
