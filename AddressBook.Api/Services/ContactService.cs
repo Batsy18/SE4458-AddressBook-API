@@ -97,6 +97,35 @@ public class ContactService(AddressBookContext db) : IContactService
         return targets.Count;
     }
 
+    public async Task<bool> SetFavoriteAsync(int id, bool isFavorite)
+    {
+        var contact = await db.Contacts.FindAsync(id);
+        if (contact is null)
+        {
+            return false;
+        }
+
+        if (contact.IsFavorite != isFavorite)
+        {
+            contact.IsFavorite = isFavorite;
+            contact.UpdatedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+        }
+
+        return true;
+    }
+
+    public async Task<IReadOnlyList<string>> GetTagsAsync()
+    {
+        var tagLists = await db.Contacts.AsNoTracking().Select(c => c.Tags).ToListAsync();
+
+        return tagLists
+            .SelectMany(tags => tags)
+            .Distinct(StringComparer.InvariantCultureIgnoreCase)
+            .Order(StringComparer.InvariantCultureIgnoreCase)
+            .ToList();
+    }
+
     private static ContactDto ToDto(Contact c) => new(
         c.Id, c.FirstName, c.LastName, c.Email, c.Phone,
         c.Tags.ToList(), c.IsFavorite, c.CreatedAt, c.UpdatedAt);

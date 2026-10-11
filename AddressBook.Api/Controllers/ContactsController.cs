@@ -69,4 +69,22 @@ public class ContactsController(IContactService contacts) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<BulkDeleteResult>> BulkDelete(BulkDeleteDto dto) =>
         Ok(new BulkDeleteResult(await contacts.BulkDeleteAsync(dto.Ids)));
+
+    /// <summary>Marks a contact as favorite. Calling it again changes nothing.</summary>
+    /// <response code="204">The contact is a favorite.</response>
+    /// <response code="404">No contact has this id.</response>
+    [HttpPut("{id:int}/favorite")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Favorite(int id) =>
+        await contacts.SetFavoriteAsync(id, true) ? NoContent() : NotFound();
+
+    /// <summary>Removes a contact from favorites. Calling it again changes nothing.</summary>
+    /// <response code="204">The contact is not a favorite.</response>
+    /// <response code="404">No contact has this id.</response>
+    [HttpDelete("{id:int}/favorite")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Unfavorite(int id) =>
+        await contacts.SetFavoriteAsync(id, false) ? NoContent() : NotFound();
 }

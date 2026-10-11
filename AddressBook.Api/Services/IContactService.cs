@@ -11,4 +11,6 @@ public interface IContactService
     Task<ContactDto?> PatchAsync(int id, PatchContactDto dto);
     Task<bool> DeleteAsync(int id);
     Task<int> BulkDeleteAsync(IReadOnlyCollection<int> ids);
+    Task<bool> SetFavoriteAsync(int id, bool isFavorite);
+    Task<IReadOnlyList<string>> GetTagsAsync();
 }
