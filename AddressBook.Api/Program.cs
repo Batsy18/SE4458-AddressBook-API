@@ -1,6 +1,7 @@
 using System.Reflection;
 using AddressBook.Api.Data;
 using AddressBook.Api.Services;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 
@@ -13,6 +14,16 @@ if (!string.IsNullOrEmpty(port))
 {
     builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 }
+
+// Render terminates HTTPS at its proxy and forwards plain http with X-Forwarded-Proto.
+// Trust those headers so generated links (e.g. the Location header) use https.
+// The proxy's address isn't fixed, so the known-proxy lists are cleared; only Render can reach the container.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
@@ -47,6 +58,9 @@ if (app.Configuration.GetValue("Database:Seed", true))
     using var scope = app.Services.CreateScope();
     SeedData.Initialize(scope.ServiceProvider.GetRequiredService<AddressBookContext>());
 }
+
+// Must run first so everything after it sees the original scheme (https).
+app.UseForwardedHeaders();
 
 // Unhandled exceptions become a 500 ProblemDetails with no stack trace.
 app.UseExceptionHandler();

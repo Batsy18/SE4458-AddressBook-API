@@ -31,6 +31,24 @@ public class CreateAndGetContactTests
     }
 
     [Fact]
+    public async Task Location_uses_https_when_the_proxy_says_the_request_was_https()
+    {
+        // Render terminates TLS and forwards plain http with X-Forwarded-Proto: https.
+        using var app = new TestApp();
+        var client = app.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/contacts")
+        {
+            Content = JsonContent.Create(NewContact()),
+        };
+        request.Headers.Add("X-Forwarded-Proto", "https");
+
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal("https", response.Headers.Location?.Scheme);
+    }
+
+    [Fact]
     public async Task Get_returns_the_stored_contact_including_tags()
     {
         using var app = new TestApp();
