@@ -17,7 +17,8 @@ if (!string.IsNullOrEmpty(port))
 
 // Render terminates HTTPS at its proxy and forwards plain http with X-Forwarded-Proto.
 // Trust those headers so generated links (e.g. the Location header) use https.
-// The proxy's address isn't fixed, so the known-proxy lists are cleared; only Render can reach the container.
+// The proxy's address isn't fixed, so the known-proxy lists are cleared. That is only safe when
+// Render's proxy is the sole way in, so the middleware is enabled only on Render (see below).
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -59,8 +60,12 @@ if (app.Configuration.GetValue("Database:Seed", true))
     SeedData.Initialize(scope.ServiceProvider.GetRequiredService<AddressBookContext>());
 }
 
-// Must run first so everything after it sees the original scheme (https).
-app.UseForwardedHeaders();
+// Render sets RENDER=true on its servers. Elsewhere (e.g. `docker run` locally) any client could
+// send X-Forwarded-* headers, so they are not trusted. Must run first so later middleware sees https.
+if (app.Configuration.GetValue("RENDER", false))
+{
+    app.UseForwardedHeaders();
+}
 
 // Unhandled exceptions become a 500 ProblemDetails with no stack trace.
 app.UseExceptionHandler();

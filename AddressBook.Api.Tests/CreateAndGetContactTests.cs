@@ -34,18 +34,34 @@ public class CreateAndGetContactTests
     public async Task Location_uses_https_when_the_proxy_says_the_request_was_https()
     {
         // Render terminates TLS and forwards plain http with X-Forwarded-Proto: https.
+        using var app = new TestApp(onRender: true);
+
+        var response = await PostWithForwardedProtoAsync(app.CreateClient());
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal("https", response.Headers.Location?.Scheme);
+    }
+
+    [Fact]
+    public async Task Forwarded_headers_are_ignored_when_not_running_on_render()
+    {
+        // Without Render's proxy in front (e.g. `docker run` locally), anyone could send these headers.
         using var app = new TestApp();
-        var client = app.CreateClient();
+
+        var response = await PostWithForwardedProtoAsync(app.CreateClient());
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal("http", response.Headers.Location?.Scheme);
+    }
+
+    private static async Task<HttpResponseMessage> PostWithForwardedProtoAsync(HttpClient client)
+    {
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/contacts")
         {
             Content = JsonContent.Create(NewContact()),
         };
         request.Headers.Add("X-Forwarded-Proto", "https");
-
-        var response = await client.SendAsync(request);
-
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        Assert.Equal("https", response.Headers.Location?.Scheme);
+        return await client.SendAsync(request);
     }
 
     [Fact]
