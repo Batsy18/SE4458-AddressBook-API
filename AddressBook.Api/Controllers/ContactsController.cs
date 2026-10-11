@@ -9,6 +9,15 @@ namespace AddressBook.Api.Controllers;
 [Route("api/contacts")]
 public class ContactsController(IContactService contacts) : ControllerBase
 {
+    /// <summary>Lists contacts with search, tag and favorite filters, sorting and paging.</summary>
+    /// <response code="200">One page of contacts.</response>
+    /// <response code="400">A query value is invalid.</response>
+    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PagedResult<ContactDto>>> List([FromQuery] ContactQuery query) =>
+        Ok(await contacts.ListAsync(query));
+
     /// <summary>Gets one contact by id.</summary>
     /// <response code="200">The contact.</response>
     /// <response code="404">No contact has this id.</response>

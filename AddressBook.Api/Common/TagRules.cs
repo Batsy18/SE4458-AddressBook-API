@@ -26,6 +26,6 @@ public static class TagRules
         (tags ?? [])
             .Where(t => !string.IsNullOrWhiteSpace(t))
             .Select(t => t!.Trim())
-            .Distinct(StringComparer.InvariantCultureIgnoreCase)
+            .Distinct(TextMatching.Comparer)
             .ToList();
 }
