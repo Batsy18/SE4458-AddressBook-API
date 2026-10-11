@@ -34,6 +34,69 @@ public class ContactService(AddressBookContext db) : IContactService
         return ToDto(contact);
     }
 
+    public async Task<ContactDto?> UpdateAsync(int id, UpdateContactDto dto)
+    {
+        var contact = await db.Contacts.FindAsync(id);
+        if (contact is null)
+        {
+            return null;
+        }
+
+        contact.FirstName = dto.FirstName.Trim();
+        contact.LastName = dto.LastName.Trim();
+        contact.Email = Clean(dto.Email);
+        contact.Phone = Clean(dto.Phone);
+        contact.Tags = TagRules.Normalize(dto.Tags);
+        contact.IsFavorite = dto.IsFavorite;
+        contact.UpdatedAt = DateTime.UtcNow;
+
+        await db.SaveChangesAsync();
+        return ToDto(contact);
+    }
+
+    public async Task<ContactDto?> PatchAsync(int id, PatchContactDto dto)
+    {
+        var contact = await db.Contacts.FindAsync(id);
+        if (contact is null)
+        {
+            return null;
+        }
+
+        if (dto.FirstName is not null) contact.FirstName = dto.FirstName.Trim();
+        if (dto.LastName is not null) contact.LastName = dto.LastName.Trim();
+        if (dto.Email is not null) contact.Email = Clean(dto.Email);
+        if (dto.Phone is not null) contact.Phone = Clean(dto.Phone);
+        if (dto.Tags is not null) contact.Tags = TagRules.Normalize(dto.Tags);
+        if (dto.IsFavorite is bool isFavorite) contact.IsFavorite = isFavorite;
+        contact.UpdatedAt = DateTime.UtcNow;
+
+        await db.SaveChangesAsync();
+        return ToDto(contact);
+    }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var contact = await db.Contacts.FindAsync(id);
+        if (contact is null)
+        {
+            return false;
+        }
+
+        db.Contacts.Remove(contact);
+        await db.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<int> BulkDeleteAsync(IReadOnlyCollection<int> ids)
+    {
+        var idSet = ids.ToHashSet();
+        var targets = await db.Contacts.Where(c => idSet.Contains(c.Id)).ToListAsync();
+
+        db.Contacts.RemoveRange(targets);
+        await db.SaveChangesAsync();
+        return targets.Count;
+    }
+
     private static ContactDto ToDto(Contact c) => new(
         c.Id, c.FirstName, c.LastName, c.Email, c.Phone,
         c.Tags.ToList(), c.IsFavorite, c.CreatedAt, c.UpdatedAt);

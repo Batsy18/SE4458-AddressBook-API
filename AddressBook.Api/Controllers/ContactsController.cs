@@ -29,4 +29,44 @@ public class ContactsController(IContactService contacts) : ControllerBase
         var created = await contacts.CreateAsync(dto);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
+
+    /// <summary>Updates a contact by replacing every editable field (full update).</summary>
+    /// <response code="200">The updated contact.</response>
+    /// <response code="400">Validation failed.</response>
+    /// <response code="404">No contact has this id.</response>
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ContactDto>> Update(int id, UpdateContactDto dto) =>
+        await contacts.UpdateAsync(id, dto) is { } contact ? Ok(contact) : NotFound();
+
+    /// <summary>Edits a contact: only the fields present in the body change.</summary>
+    /// <response code="200">The edited contact.</response>
+    /// <response code="400">Validation failed.</response>
+    /// <response code="404">No contact has this id.</response>
+    [HttpPatch("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ContactDto>> Patch(int id, PatchContactDto dto) =>
+        await contacts.PatchAsync(id, dto) is { } contact ? Ok(contact) : NotFound();
+
+    /// <summary>Deletes a contact.</summary>
+    /// <response code="204">Deleted.</response>
+    /// <response code="404">No contact has this id.</response>
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(int id) =>
+        await contacts.DeleteAsync(id) ? NoContent() : NotFound();
+
+    /// <summary>Deletes several contacts at once. Unknown ids are ignored.</summary>
+    /// <response code="200">How many contacts were deleted.</response>
+    /// <response code="400">The id list is empty or too long.</response>
+    [HttpPost("bulk-delete")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<BulkDeleteResult>> BulkDelete(BulkDeleteDto dto) =>
+        Ok(new BulkDeleteResult(await contacts.BulkDeleteAsync(dto.Ids)));
 }
