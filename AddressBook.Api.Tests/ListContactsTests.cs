@@ -216,19 +216,19 @@ public class ListContactsTests
     }
 
     [Theory]
-    [InlineData("?sortBy=age")]
-    [InlineData("?sortOrder=up")]
-    [InlineData("?page=0")]
-    [InlineData("?pageSize=0")]
-    [InlineData("?pageSize=101")]
-    [InlineData("?favorite=maybe")]
-    public async Task Invalid_query_values_return_400(string queryString)
+    [InlineData("?sortBy=age", "sortBy")]
+    [InlineData("?sortOrder=up", "sortOrder")]
+    [InlineData("?page=0", "page")]
+    [InlineData("?pageSize=0", "pageSize")]
+    [InlineData("?pageSize=101", "pageSize")]
+    [InlineData("?favorite=maybe", "favorite")]
+    public async Task Invalid_query_values_return_400(string queryString, string field)
     {
         using var app = new TestApp();
         var client = app.CreateClient();
 
         var response = await client.GetAsync($"/api/contacts{queryString}");
 
-        AssertProblem(response, HttpStatusCode.BadRequest);
+        AssertValidationError(response, field);
     }
 }

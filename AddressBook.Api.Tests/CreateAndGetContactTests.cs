@@ -111,7 +111,7 @@ public class CreateAndGetContactTests
 
         var response = await client.PostAsJsonAsync("/api/contacts", NewContact(email: "not-an-email"));
 
-        AssertProblem(response, HttpStatusCode.BadRequest);
+        AssertValidationError(response, "Email");
     }
 
     [Fact]
@@ -122,7 +122,7 @@ public class CreateAndGetContactTests
 
         var response = await client.PostAsJsonAsync("/api/contacts", NewContact(tags: [new string('x', 31)]));
 
-        AssertProblem(response, HttpStatusCode.BadRequest);
+        AssertValidationError(response, "Tags");
     }
 
     [Fact]
