@@ -1609,7 +1609,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AddressBook.Api.Dtos;
 
 /// <summary>Search, filter, sort and paging options for listing contacts.</summary>
-public class ContactQuery
+public class ContactQuery : IValidatableObject
 {
     /// <summary>Text to find in first name, last name, full name, email or any tag. Ignores case and accents.</summary>
     [FromQuery(Name = "search")]
@@ -1625,13 +1625,10 @@ public class ContactQuery
 
     /// <summary>firstName, lastName, email or createdAt. Contacts without email always come last.</summary>
     [FromQuery(Name = "sortBy")]
-    [RegularExpression("(?i)^(firstName|lastName|email|createdAt)$",
-        ErrorMessage = "sortBy must be one of: firstName, lastName, email, createdAt.")]
     public string SortBy { get; set; } = "lastName";
 
     /// <summary>asc or desc.</summary>
     [FromQuery(Name = "sortOrder")]
-    [RegularExpression("(?i)^(asc|desc)$", ErrorMessage = "sortOrder must be asc or desc.")]
     public string SortOrder { get; set; } = "asc";
 
     /// <summary>Page number, starting at 1.</summary>
@@ -1643,7 +1640,33 @@ public class ContactQuery
     [FromQuery(Name = "pageSize")]
     [Range(1, 100, ErrorMessage = "pageSize must be between 1 and 100.")]
     public int PageSize { get; set; } = 10;
+
+    private static readonly string[] SortFields = ["firstName", "lastName", "email", "createdAt"];
+    private static readonly string[] SortOrders = ["asc", "desc"];
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        // Ordinal comparison on purpose: a case-insensitive regex follows the server's culture,
+        // and in Turkish "FIRSTNAME" doesn't match "firstName" (lowercase of I is ı there).
+        if (!SortFields.Contains(SortBy, StringComparer.OrdinalIgnoreCase))
+        {
+            yield return new ValidationResult(
+                "sortBy must be one of: firstName, lastName, email, createdAt.", ["sortBy"]);
+        }
+
+        if (!SortOrders.Contains(SortOrder, StringComparer.OrdinalIgnoreCase))
+        {
+            yield return new ValidationResult("sortOrder must be asc or desc.", ["sortOrder"]);
+        }
+    }
 }
+```
+> **Corrected after execution:** the first version of this plan used `[RegularExpression("(?i)…")]`
+> here. That is culture-sensitive and rejected `sortBy=FIRSTNAME` on a Turkish machine; see the
+> README's "Issues encountered".
+
+```csharp
+// (end of ContactQuery)
 ```
 
 `AddressBook.Api/Dtos/PagedResult.cs`:

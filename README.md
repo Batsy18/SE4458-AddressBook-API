@@ -16,7 +16,7 @@ delete, search, sort and favorite contacts. There is no frontend; use the Swagge
 - .NET 10 (LTS), ASP.NET Core Web API with controllers
 - EF Core InMemory database
 - Swashbuckle (Swagger UI)
-- xUnit integration tests (`WebApplicationFactory`), 60 tests
+- xUnit integration tests (`WebApplicationFactory`), 71 tests
 - Docker, deployed on Render (free plan, auto-deploy from `main`)
 
 ## Design
@@ -70,7 +70,7 @@ Dockerfile               multi-stage build used by Render
 
 **List parameters:**
 - `search`: looks in first name, last name, full name, email and tags. It ignores case and
-  accents, so `dagdeviren` finds `Dağdeviren` and `ihsan` finds `İhsan`.
+  accents, so `dagdeviren` finds `Dağdeviren`, `ihsan` finds `İhsan` and `isik` finds `Işık`.
 - `tag`: exact tag match, ignoring case.
 - `favorite`: `true` or `false`.
 - `sortBy`: `firstName`, `lastName`, `email` or `createdAt`. Contacts without an email always come last.
@@ -110,8 +110,13 @@ request is safe (idempotent).
   with a Docker image instead; the app listens on the port in Render's `PORT` variable.
 - **Turkish locale and text comparison (two bugs).** On a Turkish machine, the lowercase of `I`
   is `ı`, not `i`.
-  - A naive `ToLower()` search would miss `İhsan` when searching for `ihsan`. Search and sort use
-    invariant-culture, accent-insensitive comparison instead.
+  - A naive `ToLower()` search would miss `İhsan` when searching for `ihsan`. Search uses
+    invariant-culture comparison that ignores case and accents. Sorting uses invariant-culture,
+    case-insensitive comparison (accents still count when sorting).
+  - The dotless `ı` is its own letter in Unicode, not an accented `i`, so ignoring accents doesn't
+    cover it. Search treats `ı` as `i`, so `isik` and `IŞIK` both find `Işık`.
+  - A dedicated test runs the same requests under `tr-TR` and `en-US` and requires identical
+    results, so these bugs would be caught on any machine.
   - A case-insensitive regex for `sortBy` rejected `FIRSTNAME` on my machine but would have
     accepted it on the Linux server. I replaced it with an ordinal check. A test caught this
     because the tests run on a Turkish-locale machine.
@@ -121,6 +126,9 @@ request is safe (idempotent).
 - **http links behind Render's proxy.** Render terminates HTTPS and forwards plain http, so the
   `Location` header of a created contact said `http://`. Fixed with the Forwarded Headers
   middleware (`X-Forwarded-Proto`). I found this while smoke-testing the live site.
+  - These headers can be faked by anyone who reaches the app directly (for example with
+    `docker run`), so they are trusted only when `RENDER=true`. Render sets that variable on
+    its servers.
 - **Windows Event Log in tests.** In a sandboxed runner, the error-handling test failed because
   the host couldn't write to the Windows Event Log. The test host now logs only to the console.
 - **EF Core InMemory and filtering.** For culture-independent, accent-insensitive search, the
@@ -133,7 +141,7 @@ Requires the .NET 10 SDK.
 
 ```bash
 dotnet run --project AddressBook.Api     # then open the printed URL (redirects to /swagger)
-dotnet test                              # run the 60 integration tests
+dotnet test                              # run the 71 integration tests
 ```
 
 With Docker:
