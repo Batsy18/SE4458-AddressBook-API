@@ -655,7 +655,6 @@ namespace AddressBook.Api.Controllers;
 /// <summary>Address book contacts.</summary>
 [ApiController]
 [Route("api/contacts")]
-[Produces("application/json")]
 public class ContactsController(IContactService contacts) : ControllerBase
 {
     /// <summary>Gets one contact by id.</summary>
@@ -1297,7 +1296,6 @@ namespace AddressBook.Api.Controllers;
 /// <summary>Tags used by contacts (for the "All Tags" filter).</summary>
 [ApiController]
 [Route("api/tags")]
-[Produces("application/json")]
 public class TagsController(IContactService contacts) : ControllerBase
 {
     /// <summary>Lists every tag in use, without duplicates, sorted A–Z.</summary>

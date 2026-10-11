@@ -1,9 +1,20 @@
 using System.Reflection;
+using AddressBook.Api.Data;
+using AddressBook.Api.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddProblemDetails();
+
+// The database name is read when the context is created (not at startup),
+// so tests can give every test app its own database via "Database:Name".
+builder.Services.AddDbContext<AddressBookContext>((services, options) =>
+    options.UseInMemoryDatabase(
+        services.GetRequiredService<IConfiguration>()["Database:Name"] ?? "AddressBook"));
+builder.Services.AddScoped<IContactService, ContactService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
